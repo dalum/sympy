@@ -327,6 +327,40 @@ class Wild(Symbol):
         raise TypeError("'%s' object is not callable" % type(self).__name__)
 
 
+class FormattedSymbol(Symbol):
+    """A FormattedSymbol allows explicit definitions of how the symbol
+    is printed by various printers.
+
+    This is particularly useful when using commas or parentheses in
+    symbol names which are unqualified variable names in, for instance,
+    lambdified expressions or other cases of automatic code generation,
+    where preserving readable names is desired either for debugging or
+    other purposes.
+
+        >>> from sympy import latex
+        >>> _default, _latex = ('{name}_{i}__{desc}{norm}',
+                                '{name}_{{{i}}}^{{{desc}, {norm}}}')
+        >>> a_1__sp0 = FormattedSymbol(_default, handlers={'_latex': _latex},
+                                       name='a', i=1, desc='sp', norm=0)
+        >>> a_1__sp0
+        a_1__sp0
+        >>> latex(a_1__sp0)
+        'a_{1}^{sp, 0}'
+
+    """
+    def __new__(cls, default_handler, handlers=None, assumptions=None, **names):
+        handlers = handlers or {}
+        assumptions = assumptions or {}
+        obj = Symbol.__new__(cls, default_handler.format(**names), **assumptions)
+
+        for handler_name, handler_str in handlers.items():
+            def _handler(printer):
+                return handler_str.format(**names)
+            setattr(obj, handler_name, _handler)
+
+        return obj
+
+
 _range = _re.compile('([0-9]*:[0-9]+|[a-zA-Z]?:[a-zA-Z])')
 
 def symbols(names, **args):
