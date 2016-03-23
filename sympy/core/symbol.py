@@ -348,10 +348,12 @@ class FormattedSymbol(Symbol):
         'a_{1}^{sp, 0}'
 
     """
-    def __new__(cls, default_handler, handlers=None, assumptions=None, **names):
+    def __new__(cls, default_handler, handlers=None, assumptions=None,
+                **names):
         handlers = handlers or {}
         assumptions = assumptions or {}
-        obj = Symbol.__new__(cls, default_handler.format(**names), **assumptions)
+        obj = Symbol.__new__(cls, default_handler.format(**names),
+                             **assumptions)
 
         for handler_name, handler_str in handlers.items():
             def _handler(printer):

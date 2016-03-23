@@ -982,6 +982,8 @@ class Basic(with_metaclass(ManagedProperties)):
               on any of its summation variables.
         """
 
+        fuzzy = hints.get('fuzzy', False)
+
         def fallback(self, old, new):
             """
             Try to replace old with new in any of self's arguments.
@@ -992,7 +994,7 @@ class Basic(with_metaclass(ManagedProperties)):
                 if not hasattr(arg, '_eval_subs'):
                     continue
                 arg = arg._subs(old, new, **hints)
-                if not _aresame(arg, args[i]):
+                if not _aresame(arg, args[i], fuzzy=fuzzy):
                     hit = True
                     args[i] = arg
             if hit:
@@ -1014,7 +1016,7 @@ class Basic(with_metaclass(ManagedProperties)):
                 return rv
             return self
 
-        if _aresame(self, old):
+        if _aresame(self, old, fuzzy=fuzzy):
             return new
 
         rv = self._eval_subs(old, new)
@@ -1656,7 +1658,7 @@ class Atom(Basic):
         ' to make a check for Atoms in the calling code.')
 
 
-def _aresame(a, b):
+def _aresame(a, b, fuzzy=False):
     """Return True if a and b are structurally the same, else False.
 
     Examples
@@ -1677,11 +1679,16 @@ def _aresame(a, b):
 
     """
     from .function import AppliedUndef, UndefinedFunction as UndefFunc
+    from sympy import Symbol
+
     for i, j in zip_longest(preorder_traversal(a), preorder_traversal(b)):
         if i != j or type(i) != type(j):
             if ((isinstance(i, UndefFunc) and isinstance(j, UndefFunc)) or
                 (isinstance(i, AppliedUndef) and isinstance(j, AppliedUndef))):
                 if i.class_key() != j.class_key():
+                    return False
+            elif fuzzy and isinstance(i, Symbol) and isinstance(j, Symbol):
+                if str(i) != str(j):
                     return False
             else:
                 return False
